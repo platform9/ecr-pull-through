@@ -66,7 +66,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		if err := json.Unmarshal(ar.Object.Raw, &pod); err != nil {
 			return nil, fmt.Errorf("unable unmarshal pod json object %v", err)
 		}
-		log.Printf("Received request to mutate pod %s", pod.Name)
+		log.Printf("Received request to mutate pod %s:%s", pod.Namespace, pod.ObjectMeta.GenerateName)
 		// set response options
 		resp.Allowed = true
 		resp.UID = ar.UID
@@ -89,7 +89,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 					}
 					p = append(p, patch)
 					imageReplaced = true
-					log.Printf("Created patch for container image %s with %s", container.Image, newImage)
+					log.Printf("Created patch for container image %s on pod %s:%s, with %s", container.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 					break // Stop checking other registries if a match is found
 				}
 			}
@@ -107,7 +107,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 							"value": newImage,
 						}
 						p = append(p, patch)
-						log.Printf("Created patch for container image %s with %s", container.Image, newImage)
+						log.Printf("Created patch for container image %s on pod %s:%s, with %s", container.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 						break
 					}
 				}
@@ -121,12 +121,12 @@ func actuallyMutate(body []byte) ([]byte, error) {
 					newImage := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s", config.AwsAccountID, config.AwsRegion, initcontainer.Image)
 					patch := map[string]string{
 						"op":    "replace",
-						"path":  fmt.Sprintf("/spec/initcontainers/%d/image", i),
+						"path":  fmt.Sprintf("/spec/initContainers/%d/image", i),
 						"value": newImage,
 					}
 					p = append(p, patch)
 					imageReplaced = true
-					log.Printf("Created patch for initcontainer image %s with %s", initcontainer.Image, newImage)
+					log.Printf("Created patch for initcontainer image %s on pod %s:%s, with %s", initcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 					break // Stop checking other registries if a match is found
 				}
 			}
@@ -140,11 +140,11 @@ func actuallyMutate(body []byte) ([]byte, error) {
 						newImage := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/docker.io/library/%s", config.AwsAccountID, config.AwsRegion, initcontainer.Image)
 						patch := map[string]string{
 							"op":    "replace",
-							"path":  fmt.Sprintf("/spec/initcontainers/%d/image", i),
+							"path":  fmt.Sprintf("/spec/initContainers/%d/image", i),
 							"value": newImage,
 						}
 						p = append(p, patch)
-						log.Printf("Created patch for initcontainer image %s with %s", initcontainer.Image, newImage)
+						log.Printf("Created patch for initcontainer image %s on pod %s:%s, with %s", initcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 						break
 					}
 				}
@@ -158,12 +158,12 @@ func actuallyMutate(body []byte) ([]byte, error) {
 					newImage := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/%s", config.AwsAccountID, config.AwsRegion, ephemeralcontainer.Image)
 					patch := map[string]string{
 						"op":    "replace",
-						"path":  fmt.Sprintf("/spec/ephemeralcontainers/%d/image", i),
+						"path":  fmt.Sprintf("/spec/ephemeralContainers/%d/image", i),
 						"value": newImage,
 					}
 					p = append(p, patch)
 					imageReplaced = true
-					log.Printf("Created patch for ephemeralcontainer image %s with %s", ephemeralcontainer.Image, newImage)
+					log.Printf("Created patch for ephemeralcontainer image %s on pod %s:%s, with %s", ephemeralcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 					break // Stop checking other registries if a match is found
 				}
 			}
@@ -177,16 +177,17 @@ func actuallyMutate(body []byte) ([]byte, error) {
 						newImage := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com/docker.io/library/%s", config.AwsAccountID, config.AwsRegion, ephemeralcontainer.Image)
 						patch := map[string]string{
 							"op":    "replace",
-							"path":  fmt.Sprintf("/spec/ephemeralcontainers/%d/image", i),
+							"path":  fmt.Sprintf("/spec/ephemeralContainers/%d/image", i),
 							"value": newImage,
 						}
 						p = append(p, patch)
-						log.Printf("Created patch for ephemeralcontainer image %s with %s", ephemeralcontainer.Image, newImage)
+						log.Printf("Created patch for ephemeralcontainer image %s on pod %s:%s, with %s", ephemeralcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName, newImage)
 						break
 					}
 				}
 			}
 		}
+
 		// parse the []map into JSON
 		resp.Patch, _ = json.Marshal(p)
 
@@ -199,10 +200,12 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		// back into JSON so we can return the finished AdmissionReview w/ Response directly
 		// w/o needing to convert things in the http handler
 		responseBody, err = json.Marshal(admReview)
+
+		log.Printf("Mutated pod %s:%s with patch = %s", pod.Namespace, pod.ObjectMeta.GenerateName, responseBody)
 		if err != nil {
 			return nil, err // untested section
 		}
-		log.Printf("Successfully mutated pod %s", pod.Name)
+		log.Printf("Successfully mutated pod %s:%s", pod.Namespace, pod.ObjectMeta.GenerateName)
 	}
 
 	return responseBody, nil
