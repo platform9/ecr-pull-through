@@ -201,7 +201,6 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		// w/o needing to convert things in the http handler
 		responseBody, err = json.Marshal(admReview)
 
-		log.Printf("Mutated pod %s:%s with patch = %s", pod.Namespace, pod.ObjectMeta.GenerateName, responseBody)
 		if err != nil {
 			return nil, err // untested section
 		}
