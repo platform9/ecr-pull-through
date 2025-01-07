@@ -1,0 +1,12 @@
+---
+{{- if .Values.useCertManager -}}
+# The self-signed cert issuer
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "ecr-pull-through.fullname" . }}
+  labels:
+    {{- include "ecr-pull-through.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+{{- end }}

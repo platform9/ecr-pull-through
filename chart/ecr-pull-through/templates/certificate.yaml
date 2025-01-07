@@ -1,0 +1,17 @@
+{{ if .Values.useCertManager }}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "ecr-pull-through.fullname" . }}
+  labels:
+    {{- include "ecr-pull-through.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "ecr-pull-through.fullname" . }}-tls
+  dnsNames:
+  - {{ include "ecr-pull-through.fullname" . }}.{{ .Release.Namespace }}.svc
+  - {{ include "ecr-pull-through.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local
+  - {{ include "ecr-pull-through.fullname" . }}
+  issuerRef:
+    name: {{ include "ecr-pull-through.fullname" . }}
+{{- end }}
