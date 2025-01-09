@@ -1,0 +1,24 @@
+---
+kind: MutatingWebhookConfiguration
+apiVersion: admissionregistration.k8s.io/v1
+metadata:
+  name: pull-through-webhook
+  namespace: kube-system
+webhooks:
+  - name: pull-through.webhook.dev
+    clientConfig:
+      caBundle: REPLACEME
+      service:
+        namespace: kube-system
+        name: pull-through-webhook
+        path: /mutate
+    rules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["pods"]
+        operations: ["CREATE", "UPDATE"]
+        scope: Namespaced
+    namespaceSelector: 
+      {{- .Values.webhookNamspaceSelector | toYaml | nindent 6 }}
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
