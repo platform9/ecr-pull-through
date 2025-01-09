@@ -22,18 +22,20 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 
 var config *Config
 
-func generatePatch(specKey string, containerIndex int, awsAccountId string, awsRegion string, containerImage string, podNamespace string, podGeneratedName string) (bool, map[string]string) {
+func generatePatch(registryList []string, specKey string, containerIndex int, awsAccountId string, awsRegion string, containerImage string, podNamespace string, podGeneratedName string) (bool, map[string]string) {
 	ecrRegistryHostname := fmt.Sprintf("%s.dkr.ecr.%s.amazonaws.com", awsAccountId, awsRegion)
 	dockerHubPullThroughCacheConfigured := false
 
 	// shortcut to avoid patching images that are already patched.
 	if strings.HasPrefix(containerImage, ecrRegistryHostname) {
+		log.Printf("{ \"appliedPatch\": false, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\" }",
+			podNamespace, podGeneratedName, specKey, containerIndex, containerImage)
 		return false, nil
 	}
 
 	// Loop through the list of configured pull-through cache registries.
 	// If the image contains a registry prefix, patch it with the ECR pull through cache image name.
-	for _, registry := range config.RegistryList() {
+	for _, registry := range registryList {
 
 		// Note for later whether the docker.io registry is in the list of configured registries
 		// This value is used to trigger docker.io specific logic if we exit this loop without
@@ -53,7 +55,7 @@ func generatePatch(specKey string, containerIndex int, awsAccountId string, awsR
 				newImage = fmt.Sprintf("%s/%s/library/%s", ecrRegistryHostname, parts[0], parts[1])
 			}
 
-			log.Printf("{ appliedPatch: true, podNamespace: \"%s\", podGeneratedName: \"%s\", specKey: \"%s\", index: %d, originalImage: \"%s\", newImage: \"%s\" }",
+			log.Printf("{ \"appliedPatch\": true, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\", \"newImage\": \"%s\" }",
 				podNamespace, podGeneratedName, specKey, containerIndex, containerImage, newImage)
 
 			return true, map[string]string{
@@ -75,7 +77,7 @@ func generatePatch(specKey string, containerIndex int, awsAccountId string, awsR
 		if len(parts) == 1 {
 			newImage := fmt.Sprintf("%s/docker.io/library/%s", ecrRegistryHostname, containerImage)
 
-			log.Printf("{ appliedPatch: true, podNamespace: \"%s\", podGeneratedName: \"%s\", specKey: \"%s\", index: %d, originalImage: \"%s\", newImage: \"%s\" }",
+			log.Printf("{ \"appliedPatch\": true, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\", \"newImage\": \"%s\" }",
 				podNamespace, podGeneratedName, specKey, containerIndex, containerImage, newImage)
 
 			return true, map[string]string{
@@ -89,7 +91,7 @@ func generatePatch(specKey string, containerIndex int, awsAccountId string, awsR
 		if len(parts) == 2 {
 			newImage := fmt.Sprintf("%s/docker.io/%s", ecrRegistryHostname, containerImage)
 
-			log.Printf("{ appliedPatch: true, podNamespace: \"%s\", podGeneratedName: \"%s\", specKey: \"%s\", index: %d, originalImage: \"%s\", newImage: \"%s\" }",
+			log.Printf("{ \"appliedPatch\": true, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\", \"newImage\": \"%s\" }",
 				podNamespace, podGeneratedName, specKey, containerIndex, containerImage, newImage)
 
 			return true, map[string]string{
@@ -101,6 +103,8 @@ func generatePatch(specKey string, containerIndex int, awsAccountId string, awsR
 	}
 
 	// The pod will not be patched if the code reaches this point.
+	log.Printf("{ \"appliedPatch\": false, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\" }",
+		podNamespace, podGeneratedName, specKey, containerIndex, containerImage)
 	return false, nil
 }
 
@@ -110,7 +114,7 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	defer r.Body.Close()
 	if err != nil {
-		log.Println(err)
+		log.Printf("{ \"state\": \"error\", msg: \"%s\" }", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%s", err)
 	}
@@ -118,7 +122,7 @@ func handleMutate(w http.ResponseWriter, r *http.Request) {
 	// mutate the request
 	mutated, err := actuallyMutate(body)
 	if err != nil {
-		log.Println(err)
+		log.Printf("{ \"state\": \"error\", msg: \"%s\" }", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintf(w, "%s", err)
 	}
@@ -148,7 +152,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		if err := json.Unmarshal(ar.Object.Raw, &pod); err != nil {
 			return nil, fmt.Errorf("unable unmarshal pod json object %v", err)
 		}
-		log.Printf("Received request to mutate pod %s:%s", pod.Namespace, pod.ObjectMeta.GenerateName)
+		log.Printf("{ \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"state\": \"started\", msg: \"\" }", pod.Namespace, pod.ObjectMeta.GenerateName)
 		// set response options
 		resp.Allowed = true
 		resp.UID = ar.UID
@@ -160,7 +164,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		p := []map[string]string{}
 		// Containers
 		for i, container := range pod.Spec.Containers {
-			patchApplied, patch := generatePatch("containers", i, config.AwsAccountID, config.AwsRegion, container.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
+			patchApplied, patch := generatePatch(config.RegistryList(), "containers", i, config.AwsAccountID, config.AwsRegion, container.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
 			if patchApplied {
 				p = append(p, patch)
 			}
@@ -168,7 +172,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 
 		// InitContainers
 		for i, initcontainer := range pod.Spec.InitContainers {
-			patchApplied, patch := generatePatch("initContainers", i, config.AwsAccountID, config.AwsRegion, initcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
+			patchApplied, patch := generatePatch(config.RegistryList(), "initContainers", i, config.AwsAccountID, config.AwsRegion, initcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
 			if patchApplied {
 				p = append(p, patch)
 			}
@@ -176,7 +180,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 
 		// EphemeralContainers
 		for i, ephemeralcontainer := range pod.Spec.EphemeralContainers {
-			patchApplied, patch := generatePatch("ephemeralContainers", i, config.AwsAccountID, config.AwsRegion, ephemeralcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
+			patchApplied, patch := generatePatch(config.RegistryList(), "ephemeralContainers", i, config.AwsAccountID, config.AwsRegion, ephemeralcontainer.Image, pod.Namespace, pod.ObjectMeta.GenerateName)
 			if patchApplied {
 				p = append(p, patch)
 			}
@@ -198,7 +202,7 @@ func actuallyMutate(body []byte) ([]byte, error) {
 		if err != nil {
 			return nil, err // untested section
 		}
-		log.Printf("Successfully mutated pod %s:%s", pod.Namespace, pod.ObjectMeta.GenerateName)
+		log.Printf("{ \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"state\": \"successful\" }", pod.Namespace, pod.ObjectMeta.GenerateName)
 	}
 
 	return responseBody, nil
