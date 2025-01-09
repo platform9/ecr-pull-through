@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -28,6 +29,13 @@ func generatePatch(registryList []string, specKey string, containerIndex int, aw
 
 	// shortcut to avoid patching images that are already patched.
 	if strings.HasPrefix(containerImage, ecrRegistryHostname) {
+		log.Printf("{ \"appliedPatch\": false, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\" }",
+			podNamespace, podGeneratedName, specKey, containerIndex, containerImage)
+		return false, nil
+	}
+
+	ecrRegex := regexp.MustCompile(`.+\.dkr\.ecr\..+\.amazonaws\.com/`)
+	if ecrRegex.MatchString(containerImage) {
 		log.Printf("{ \"appliedPatch\": false, \"podNamespace\": \"%s\", \"podGeneratedName\": \"%s\", \"specKey\": \"%s\", \"index\": %d, \"originalImage\": \"%s\" }",
 			podNamespace, podGeneratedName, specKey, containerIndex, containerImage)
 		return false, nil

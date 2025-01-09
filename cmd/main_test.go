@@ -409,6 +409,19 @@ func TestGeneratePatch(t *testing.T) {
 			expectedPatchApplied: false,
 			expectedPatch:        nil,
 		},
+		{
+			name:                 "Webhook does not modify ECR library image with ECR Prefix in the image name.",
+			registryList:         []string{"docker.io", "ghcr.io", "quay.io"},
+			specKey:              "containers",
+			containerIndex:       0,
+			awsAccountId:         "1234567890123",
+			awsRegion:            "us-west-2",
+			containerImage:       "602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon-k8s-cni-init:v1.19.2-eksbuild.1",
+			podNamespace:         "default",
+			podGeneratedName:     "mypod-389fw48",
+			expectedPatchApplied: false,
+			expectedPatch:        nil,
+		},
 	}
 
 	for _, tt := range tests {
