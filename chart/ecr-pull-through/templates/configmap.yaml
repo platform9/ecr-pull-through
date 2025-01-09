@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "ecr-pull-through.fullname" . }}
+  labels:
+    {{- include "ecr-pull-through.labels" . | nindent 4 }}
+data:
+  registries.yaml: |
+    awsRegion: {{ .Values.ecrPullThrough.awsRegion }}
+    awsAccountId: {{ .Values.ecrPullThrough.awsAccountId | quote }}
+    registries: {{ .Values.ecrPullThrough.registries | toYaml | nindent 6 }}
