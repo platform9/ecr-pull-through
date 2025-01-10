@@ -1,8 +1,10 @@
 {
     "$schema": "https://docs.renovatebot.com/renovate-schema.json",
     "extends": [
+      "github>maxtacu/ecr-pull-through",
       "config:recommended"
     ],
     "automerge": true,
-    "commitMessagePrefix": "#patch: "
+    "commitMessagePrefix": "#patch: ",
+    "includeForks": true
 }
