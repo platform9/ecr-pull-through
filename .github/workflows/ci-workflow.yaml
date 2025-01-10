@@ -3,6 +3,12 @@ name: CI Workflow
 on:
     workflow_dispatch:
     pull_request:
+        paths:
+        - .github/workflows/ci-workflow.yaml
+        - cmd/**
+        - Dockerfile
+        - go.mod
+        - go.sum
 
 jobs:
     test:
