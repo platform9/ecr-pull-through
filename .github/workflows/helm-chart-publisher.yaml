@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  CHART_DIR: chart/ecr-pull-through
+  CHART_NAME: ecr-pull-through
 jobs:
   package-helm-chart:
     permissions:
@@ -28,7 +28,7 @@ jobs:
         id: set-variables
         run: |
           echo "REPOSITORY=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          echo "VERSION=$(yq -r .version ./${{ env.CHART_DIR }}/Chart.yaml)" >> "$GITHUB_OUTPUT"          
+          echo "VERSION=$(yq -r .version ./chart/${{ env.CHART_NAME }}/Chart.yaml)" >> "$GITHUB_OUTPUT"          
 
       - name: Env variable output
         id: test-variables
@@ -45,8 +45,8 @@ jobs:
 
       - name: Package and push helm chart
         run: |
-          helm package ./${{ env.CHART_DIR }} --version ${{ steps.set-variables.outputs.VERSION }}
-          helm push ./${{ env.CHART_DIR }}-${{ steps.set-variables.outputs.VERSION }}.tgz oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts
+          helm package ./chart/${{ env.CHART_NAME }} --version ${{ steps.set-variables.outputs.VERSION }}
+          helm push ./${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ steps.set-variables.outputs.VERSION }}.tgz oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts
   
   publish-helm-chart:
     permissions:
