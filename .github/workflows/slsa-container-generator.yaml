@@ -4,10 +4,6 @@ on:
   push:
     tags:
       - "*"
-  workflow_run:
-    workflows: ["Auto.Tag"]
-    types:
-      - completed
 
 permissions: read-all
 
