@@ -1,0 +1,42 @@
+name: CI Workflow
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Set up Go
+          uses: actions/setup-go@v2
+
+        - name: Run Go tests
+          run: |
+            cd cmd
+            go test ./...
+    build:
+        needs: test
+        runs-on: ubuntu-latest
+
+        steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v1
+
+        - name: Cache Docker layers
+          uses: actions/cache@v2
+          with:
+            path: /tmp/.buildx-cache
+            key: ${{ runner.os }}-buildx-${{ github.sha }}
+            restore-keys: |
+                ${{ runner.os }}-buildx-
+
+        - name: Build Docker image
+          run: docker build -t $(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]'):latest .
