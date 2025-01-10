@@ -16,6 +16,15 @@ jobs:
   tag:
     runs-on: ubuntu-latest
     steps: 
-    - uses: phish108/autotag-action@v1.1.55
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Autotag the repository
+      id: autotag
+      uses: phish108/autotag-action@v1.1.55
       with:
         github-token: ${{ secrets.GITHUB_TOKEN}}
+
+    - name: Trigger the slsa container generator workflow.
+      run: |
+        gh workflow run .github/workflows/slsa-container-generator.yaml --ref ${{ steps.autotag.outputs.new-tag }}
