@@ -28,7 +28,7 @@ jobs:
         id: set-variables
         run: |
           echo "REPOSITORY=ghcr.io/$(echo ${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
-          echo "VERSION=$(yq -r .version ./chart/${{ env.CHART_DIR }}" >> "$GITHUB_OUTPUT"          
+          echo "VERSION=$(yq -r .version ./chart/${{ env.CHART_DIR }})" >> "$GITHUB_OUTPUT"          
 
       - name: Env variable output
         id: test-variables
