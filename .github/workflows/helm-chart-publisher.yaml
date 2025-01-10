@@ -46,7 +46,7 @@ jobs:
       - name: Package and push helm chart
         run: |
           helm package ./chart/${{ env.CHART_NAME }} --version ${{ steps.set-variables.outputs.VERSION }}
-          helm push ./${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ steps.set-variables.outputs.VERSION }}.tgz oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts
+          helm push ${{ github.workspace }}/${{ env.CHART_NAME }}/${{ env.CHART_NAME }}-${{ steps.set-variables.outputs.VERSION }}.tgz oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts
   
   publish-helm-chart:
     permissions:
