@@ -75,7 +75,7 @@ jobs:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   notify:
-    needs: [provenance]
+    needs: [build, provenance]
     runs-on: ubuntu-latest
     steps:
       - name: Load secrets
