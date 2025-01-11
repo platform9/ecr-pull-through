@@ -17,11 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps: 
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Autotag the repository
       id: autotag
-      uses: phish108/autotag-action@v1.1.55
+      uses: phish108/autotag-action@v1.1.64
       with:
         github-token: ${{ secrets.GITHUB_TOKEN}}
 
