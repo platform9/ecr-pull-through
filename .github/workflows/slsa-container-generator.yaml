@@ -93,5 +93,5 @@ jobs:
           args: |
             {{ EVENT_PAYLOAD.repository.full_name }} has published Release: ${{github.ref_name}}
             Github Release URL: ${{github.server_url}}/${{github.repository}}/releases/tag/${{github.ref_name}}
-            Docker Image: ${{needs.build.outputs.image}}
-            Digest: ${{needs.build.outputs.digest}}
+            Docker Image: `${{ needs.build.outputs.image }}`
+            Digest: `${{ needs.build.outputs.digest }}`
