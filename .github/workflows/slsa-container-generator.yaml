@@ -74,3 +74,24 @@ jobs:
       registry-username: ${{ github.actor }}
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    needs: [provenance]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Load secrets
+        uses: 1password/load-secrets-action@v2
+        with:
+          # Export loaded secrets as environment variables
+          export-env: true
+        env:
+          OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
+          DISCORD_WEBHOOK: op://Home_Lab/Discord-Webhooks/github-actions-bot
+      - name: Discord notification
+        uses: Ilshidur/action-discord@master
+        with:
+          args: |
+            {{ EVENT_PAYLOAD.repository.full_name }} has published Release: ${{github.ref_name}}
+            Github Release URL: ${{github.server_url}}/${{github.repository}}/releases/tag/${{github.ref_name}}
+            Docker Image: ${{needs.build.outputs.image}}
+            Digest: ${{needs.build.outputs.digest}}
