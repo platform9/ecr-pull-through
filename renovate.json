@@ -5,5 +5,6 @@
   ],
   "automerge": true,
   "commitMessagePrefix": "#patch: ",
-  "forkProcessing": "enabled"
+  "forkProcessing": "enabled",
+  "minimumReleaseAge": "10 days"
 }
