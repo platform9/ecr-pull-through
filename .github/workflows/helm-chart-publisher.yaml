@@ -74,5 +74,5 @@ jobs:
         with:
           args: |
             {{ EVENT_PAYLOAD.repository.full_name }} has published Release: ${{github.ref_name}}
-            Helm Chart: `${{ env.CHART_NAME }}@${{ steps.set-variables.outputs.VERSION }}`
-            `helm upgrade --install ${{ env.CHART_NAME }} oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts/${{ env.CHART_NAME }} --version ${{ steps.set-variables.outputs.VERSION }}`
+            Helm Chart: `oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts/${{ env.CHART_NAME }}`
+            Version: `${{ steps.set-variables.outputs.VERSION }}`
