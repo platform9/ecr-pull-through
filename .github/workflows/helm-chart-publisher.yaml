@@ -70,10 +70,8 @@ jobs:
           OP_SERVICE_ACCOUNT_TOKEN: ${{ secrets.OP_SERVICE_ACCOUNT_TOKEN }}
           DISCORD_WEBHOOK: op://Home_Lab/Discord-Webhooks/github-actions-bot
       - name: Discord notification
-        uses: Ilshidur/action-discord@08d9328877d6954120eef2b07abbc79249bb6210
+        uses: "Ilshidur/action-discord@08d9328877d6954120eef2b07abbc79249bb6210"
         with:
           args: |
-            {{ EVENT_PAYLOAD.repository.full_name }} has published a new Helm Chart: ${{ env.CHART_NAME }}@${{ steps.set-variables.outputs.VERSION }}
-            Command: `helm upgrade --install ${{ env.CHART_NAME }} oci://${{ steps.set-variables.outputs.REPOSITORY }}/charts/${{ env.CHART_NAME }} --version ${{ steps.set-variables.outputs.VERSION }}`
-
-
+            {{ EVENT_PAYLOAD.repository.full_name }} has published Release: ${{github.ref_name}}
+            Helm Chart: ${{ env.CHART_NAME }}@${{ steps.set-variables.outputs.VERSION }}
