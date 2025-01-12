@@ -18,10 +18,10 @@ ecrPullThrough:
 replicaCount: 2
 
 image:
-  repository: docker.io/estenrye/ecr-pull-through
+  repository: ghcr.io/estenrye/ecr-pull-through
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: "0.0.24"
 
 imagePullSecrets: []
 nameOverride: ""
