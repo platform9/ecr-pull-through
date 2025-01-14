@@ -16,6 +16,11 @@ ecrPullThrough:
     - ghcr.io
     - registry.k8s.io
 
+tls:
+  caBundle: replaceMe
+  cert: replaceMe
+  key: replaceMe
+
 replicaCount: 2
 
 image:

@@ -2,12 +2,17 @@
 kind: MutatingWebhookConfiguration
 apiVersion: admissionregistration.k8s.io/v1
 metadata:
-  name: pull-through-webhook
-  namespace: kube-system
+  name: {{ include "ecr-pull-through.fullname" . }}
+{{- if .Values.useCertManager}}
+  annotations: 
+    cert-manager.io/inject-ca-from: {{.Release.Namespace}}/{{ include "ecr-pull-through.fullname" . }}
+{{- end}}
 webhooks:
   - name: pull-through.webhook.dev
     clientConfig:
-      caBundle: REPLACEME
+{{- if not .Values.useCertManager}}
+      caBundle: {{ .Values.tls.caBundle | b64enc | quote }}
+{{- end}}
       service:
         namespace: kube-system
         name: pull-through-webhook
