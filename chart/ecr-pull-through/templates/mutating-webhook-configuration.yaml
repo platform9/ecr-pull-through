@@ -14,8 +14,8 @@ webhooks:
       caBundle: {{ .Values.tls.caBundle | b64enc | quote }}
 {{- end}}
       service:
-        namespace: kube-system
-        name: pull-through-webhook
+        namespace: {{.Release.Namespace}}
+        name: {{ include "ecr-pull-through.fullname" . }}
         path: /mutate
     rules:
       - apiGroups: [""]
