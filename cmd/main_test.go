@@ -422,6 +422,23 @@ func TestGeneratePatch(t *testing.T) {
 			expectedPatchApplied: false,
 			expectedPatch:        nil,
 		},
+		{
+			name:                 "Patch a tagged registry.k8s.io library image with registry prefix",
+			registryList:         []string{"quay.io", "docker.io", "ghcr.io", "registry.k8s.io"},
+			specKey:              "containers",
+			containerIndex:       0,
+			awsAccountId:         "1234567890123",
+			awsRegion:            "us-west-2",
+			containerImage:       "registry.k8s.io/kube-apiserver:v1.30.2",
+			podNamespace:         "default",
+			podGeneratedName:     "mypod-389fw48",
+			expectedPatchApplied: true,
+			expectedPatch: map[string]string{
+				"op":    "replace",
+				"path":  "/spec/containers/0/image",
+				"value": "1234567890123.dkr.ecr.us-west-2.amazonaws.com/registry.k8s.io/kube-apiserver:v1.30.2",
+			},
+		},
 	}
 
 	for _, tt := range tests {

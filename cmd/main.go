@@ -58,8 +58,9 @@ func generatePatch(registryList []string, specKey string, containerIndex int, aw
 			// split containerImage to find out if it has two or three parts.
 			// if it has three parts, like docker.io/foo/bar, then it is not a library image.
 			// if it has two parts, like docker.io/bar, then it is a library image and needs library injected into the path.
+			// don't do this for registry.k8s.io images, as they don't follow the spec.
 			parts := strings.Split(containerImage, "/")
-			if len(parts) == 2 {
+			if len(parts) == 2 && registry != "registry.k8s.io" {
 				newImage = fmt.Sprintf("%s/%s/library/%s", ecrRegistryHostname, parts[0], parts[1])
 			}
 
