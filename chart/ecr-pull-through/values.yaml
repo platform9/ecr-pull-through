@@ -3,8 +3,11 @@
 # Declare variables to be passed into your templates.
 disableWebhookNamespaceSelector: false
 webhookNamspaceSelector:
-  matchLabels:
-    pull-through-enabled: "true"
+  matchExpressions:
+  - key: kubernetes.io/metadata.name
+    operator: NotIn
+    values:
+    - kube-system
 
 useCertManager: true
 ecrPullThrough:
