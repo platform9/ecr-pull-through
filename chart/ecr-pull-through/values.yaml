@@ -8,6 +8,7 @@ webhookNamspaceSelector:
     operator: NotIn
     values:
     - kube-system
+    - cert-manager
 
 useCertManager: true
 ecrPullThrough:
