@@ -256,16 +256,6 @@ func main() {
 	mux.HandleFunc("/", handleRoot)
 	mux.HandleFunc("/mutate", handleMutate)
 
-	reloader := &CertReloader{
-		certPath: "/tls/tls.crt",
-		keyPath:  "/tls/tls.key",
-	}
-
-	tlsCfg := &tls.Config{
-		GetCertificate: reloader.GetCertificate,
-		MinVersion:     tls.VersionTLS12,
-	}
-
 	s := &http.Server{
 		Addr:           ":8443",
 		Handler:        mux,
