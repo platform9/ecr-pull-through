@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -16,6 +17,32 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+type CertReloader struct {
+	certPath 		  string
+	keyPath  		  string
+	cachedCert        *tls.Certificate
+	cachedCertModTime time.Time
+}
+
+func (cr *CertReloader) GetCertificate(h *tls.ClientHelloInfo) (*tls.Certificate, error) {
+    stat, err := os.Stat(cr.certPath)
+    if err != nil {
+        return nil, fmt.Errorf("failed checking cert file modification time: %w", err)
+    }
+
+    if cr.cachedCert == nil || stat.ModTime().After(cr.cachedCertModTime) {
+        pair, err := tls.LoadX509KeyPair(cr.certPath, cr.keyPath)
+        if err != nil {
+            return nil, fmt.Errorf("failed loading tls key pair: %w", err)
+        }
+
+        cr.cachedCert = &pair
+        cr.cachedCertModTime = stat.ModTime()
+    }
+
+    return cr.cachedCert, nil
+}
 
 func handleRoot(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "ECR Pull-through webhook %q", html.EscapeString(r.URL.Path))
@@ -229,6 +256,16 @@ func main() {
 	mux.HandleFunc("/", handleRoot)
 	mux.HandleFunc("/mutate", handleMutate)
 
+	reloader := &CertReloader{
+		certPath: "/tls/tls.crt",
+		keyPath:  "/tls/tls.key",
+	}
+
+	tlsCfg := &tls.Config{
+		GetCertificate: reloader.GetCertificate,
+		MinVersion:     tls.VersionTLS12,
+	}
+
 	s := &http.Server{
 		Addr:           ":8443",
 		Handler:        mux,
@@ -245,7 +282,17 @@ func main() {
 		log.Println("Starting server without TLS...")
 		log.Fatal(s.ListenAndServe())
 	} else {
-		log.Println("Starting server with TLS...")
-		log.Fatal(s.ListenAndServeTLS("/tls/tls.crt", "/tls/tls.key"))
+		reloader := &CertReloader{
+			certPath: "/tls/tls.crt",
+			keyPath:  "/tls/tls.key",
+		}
+
+		tlsCfg := &tls.Config{
+			GetCertificate: reloader.GetCertificate,
+			MinVersion:     tls.VersionTLS12,
+		}
+		s.TLSConfig = tlsCfg
+		log.Println("Starting server with dynamic TLS reloading...")
+		log.Fatal(s.ListenAndServeTLS("", ""))
 	}
 }
